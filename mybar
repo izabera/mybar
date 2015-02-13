@@ -1,0 +1,189 @@
+#!/bin/bash
+
+# this is free software
+
+declare -i memtotal memfree memavailable buffers cached
+
+# nullglob needed for the battery
+shopt -s nullglob
+# normalize IFS to avoid unexpected results when read'ing
+IFS=$' \t\n'
+
+# set the env variable TIMEFORMAT to change this
+# there can be no mismatched ( ) in that format
+# no smileys in the time format :(
+timeformat=${TIMEFORMAT-"%H:%M  %a, %d %b %Y"}
+# note that setting it to an empty value will cause bash to use %T
+
+# > 60 to gather cpu/mem/battery info immediately
+SECONDS=61
+
+
+# colors from https://github.com/baskerville/bspwm/blob/master/examples/panel/panel_colors
+COLOR_FOREGROUND='#FFA3A6AB'
+COLOR_BACKGROUND='#FF34322E'
+COLOR_ACTIVE_MONITOR_FG='#FF34322E'
+COLOR_ACTIVE_MONITOR_BG='#FF58C5F1'
+COLOR_INACTIVE_MONITOR_FG='#FF58C5F1'
+COLOR_INACTIVE_MONITOR_BG='#FF34322E'
+COLOR_FOCUSED_OCCUPIED_FG='#FFF6F9FF'
+COLOR_FOCUSED_OCCUPIED_BG='#FF5C5955'
+COLOR_FOCUSED_FREE_FG='#FFF6F9FF'
+COLOR_FOCUSED_FREE_BG='#FF6D561C'
+COLOR_FOCUSED_URGENT_FG='#FF34322E'
+COLOR_FOCUSED_URGENT_BG='#FFF9A299'
+COLOR_OCCUPIED_FG='#FFA3A6AB'
+COLOR_OCCUPIED_BG='#FF34322E'
+COLOR_FREE_FG='#FF6F7277'
+COLOR_FREE_BG='#FF34322E'
+COLOR_URGENT_FG='#FFF9A299'
+COLOR_URGENT_BG='#FF34322E'
+COLOR_LAYOUT_FG='#FFA3A6AB'
+COLOR_LAYOUT_BG='#FF34322E'
+COLOR_TITLE_FG='#FFA3A6AB'
+COLOR_TITLE_BG='#FF34322E'
+COLOR_STATUS_FG='#FFA3A6AB'
+COLOR_STATUS_BG='#FF34322E'
+
+
+
+# run bar in a coprocess, to avoid a fork with     ./script | bar | bash
+coproc bar -f -misc-tamsynmod-medium-r-normal--12-87-100-100-c-60-iso8859-1 -F "$COLOR_FOREGROUND" -B "$COLOR_BACKGROUND"
+
+
+
+# this will need to be restarted when adding a monitor...
+unset monitor
+mapfile monitor < <(bspc query -M)
+num_mon=${#monitor[@]}
+
+
+
+
+while :; do 
+  # updating the wm things immediately is important
+  # everything else can wait
+  if (( SECONDS > 60 )); then
+
+    printf -v time "%($timeformat)T" -1
+
+    read -r cpu _ < /proc/loadavg
+
+    cpu=$((10#${cpu/.}))%%
+
+    mapfile meminfo < /proc/meminfo
+    read -r _ memtotal _ <<< "${meminfo[0]}"
+    read -r _ memfree _ <<< "${meminfo[1]}"
+    read -r _ buffers _ <<< "${meminfo[3]}"
+    read -r _ cached _ <<< "${meminfo[4]}"
+    read -r _ slab _ <<< "${meminfo[21]}"
+
+    # exactly like free(1)
+    memused=$((memtotal - memfree - buffers - (cached + slab)))
+    memtotal=$((memtotal*10/1024/1024))
+    memfree=$((memfree*10/1024/1024))
+    memused=$((memused*10/1024/1024))
+    # TODO: human readable format
+
+    _memfree="${memfree%?}.${memfree:(-1)} GiB"
+    _memused="${memused%?}.${memused:(-1)} GiB"
+    _memtotal="${memtotal%?}.${memtotal:(-1)} GiB"
+    mem="free ${_memfree/#./0.} / used ${_memused/#./0.} / total ${_memtotal/#./0.}"
+
+    # glob expansion in the loop to detect if a battery was added/removed
+    batarr=( /sys/class/power_supply/BAT* )
+    if (( ${#batarr[@]} )); then
+      # test the first one, assuming it's the only one
+      bat=$(<"${batarr[0]}"/capacity)%%
+      if [[ $(<"${batarr[0]}"/status) = Discharging ]]; then bat=[$bat]; fi
+    else
+      bat=[NO]
+    fi
+    # TODO: maybe add colors?
+
+    SECONDS=0
+  fi
+
+  right="cpu $cpu ~ mem $mem ~ bat $bat ~ $time"
+
+
+
+
+  # the title may change several times between two iterations of the (outer) while loop
+  # use a while loop to soak up input until the last line == the currently focused window
+  while read -r -t 0 -u 3 _; do IFS= read -r -u 3 center; done
+
+
+
+
+  # this part is mostly from
+  # https://github.com/baskerville/bspwm/blob/master/examples/panel/panel_bar
+  # edited to add mouse support
+
+  while read -r -t 0 _; do read -r bspc; done
+  if [[ $bspc ]]; then
+    left=
+    while read -r -d : -u 4; do
+      case $REPLY in
+        M*) # active monitor
+          if (( num_mon > 1 )) ; then
+            left+=" %{F$COLOR_ACTIVE_MONITOR_FG}%{B$COLOR_ACTIVE_MONITOR_BG} ${REPLY#?} %{B-}%{F-}  "
+          fi ;;
+        m*) # inactive monitor
+          if (( num_mon > 1 )) ; then
+            left+=" %{F$COLOR_INACTIVE_MONITOR_FG}%{B$COLOR_INACTIVE_MONITOR_BG} ${REPLY#?} %{B-}%{F-}  "
+          fi ;;
+
+        O*|F*|U*|o*|f*|u*) # start clicky part
+          left+="%{A:bspc desktop -f ${REPLY#?}:}" ;;&
+
+        O*) # focused occupied desktop
+          left+="%{F$COLOR_FOCUSED_OCCUPIED_FG}%{B$COLOR_FOCUSED_OCCUPIED_BG}%{U$COLOR_FOREGROUND}%{+u} ${REPLY#?} %{-u}%{B-}%{F-}" ;;&
+        F*) # focused free desktop
+          left+="%{F$COLOR_FOCUSED_FREE_FG}%{B$COLOR_FOCUSED_FREE_BG}%{U$COLOR_FOREGROUND}%{+u} ${REPLY#?} %{-u}%{B-}%{F-}" ;;&
+        U*) # focused urgent desktop
+          left+="%{F$COLOR_FOCUSED_URGENT_FG}%{B$COLOR_FOCUSED_URGENT_BG}%{U$COLOR_FOREGROUND}%{+u} ${REPLY#?} %{-u}%{B-}%{F-}" ;;&
+        o*) # occupied desktop
+          left+="%{F$COLOR_OCCUPIED_FG}%{B$COLOR_OCCUPIED_BG} ${REPLY#?} %{B-}%{F-}" ;;&
+        f*) # free desktop
+          left+="%{F$COLOR_FREE_FG}%{B$COLOR_FREE_BG} ${REPLY#?} %{B-}%{F-}" ;;&
+        u*) # urgent desktop
+          left+="%{F$COLOR_URGENT_FG}%{B$COLOR_URGENT_BG} ${REPLY#?} %{B-}%{F-}" ;;&
+
+        O*|F*|U*|o*|f*|u*) # end clicky part
+          left+=%{A} ;;
+
+        L*) # layout
+          left+="  %{F$COLOR_LAYOUT_FG}%{B$COLOR_LAYOUT_BG} ${REPLY#?} %{B-}%{F-}" ;;
+      esac
+    done 4<<< "$bspc":   # add a trailing : for read
+  fi
+  bspc=
+
+
+
+
+
+
+
+
+  
+  new=%{l}$left%{c}$center%{r}$right
+  if [[ $new != "$old" ]]; then
+    echo "$new"
+    old=$new
+  fi
+
+
+
+  # small hack to use shell syntax in buttons
+
+  # when clicking on buttons in bar, shell syntax is written to stdout
+  # there are probably better ways but that would mean having to parse stuff
+  # anyway, this is safe since we're emitting the code that's being executed
+
+  # the timer is needed to update the data we're printing
+  # if we're told to execute a command, do it asyncronously and move on with the loop
+  if read -t .2 -r -u "${COPROC[0]}"; then eval "$REPLY" & fi
+
+done 3< <(xtitle -s) < <(bspc control --subscribe) >&"${COPROC[1]}" 
