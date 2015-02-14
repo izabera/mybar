@@ -16,32 +16,34 @@ timeformat=${TIMEFORMAT-"%H:%M  %a, %d %b %Y"}
 # note that setting it to an empty value will cause bash to use %T
 
 
-COLOR_FOREGROUND='#FFA3A6AB'
-COLOR_BACKGROUND='#FF4d4d4d'
-COLOR_ACTIVE_MONITOR_FG='#FF34322E'
-COLOR_ACTIVE_MONITOR_BG='#FF58C5F1'
-COLOR_INACTIVE_MONITOR_FG='#FF58C5F1'
-COLOR_INACTIVE_MONITOR_BG='#FF34322E'
-COLOR_FOCUSED_OCCUPIED_FG='#FFF6F9FF'
-COLOR_FOCUSED_OCCUPIED_BG='#FF5C5955'
-COLOR_FOCUSED_FREE_FG='#FFF6F9FF'
-COLOR_FOCUSED_FREE_BG='#FF4d4d4d'   #6D561C'
-COLOR_FOCUSED_URGENT_FG='#FF34322E'
-COLOR_FOCUSED_URGENT_BG='#FF1793d1'   #F9A299'
-COLOR_OCCUPIED_FG='#FFA3A6AB'
-COLOR_OCCUPIED_BG='#FF4d4d4d' #34322E'
-COLOR_FREE_FG='#FF6F7277'
-COLOR_FREE_BG='#FF4d4d4d' #34322E'
-COLOR_URGENT_FG='#FFF9A299'
-COLOR_URGENT_BG='#FF34322E'
-COLOR_LAYOUT_FG='#FFA3A6AB'
-COLOR_LAYOUT_BG='#FF34322E'
-COLOR_TITLE_FG='#FFA3A6AB'
-COLOR_TITLE_BG='#FF34322E'
-COLOR_STATUS_FG='#FFA3A6AB'
-COLOR_STATUS_BG='#FF34322E'
+COLOR_FOREGROUND=#FFA3A6AB
+COLOR_BACKGROUND=#FF4d4d4d
+COLOR_ACTIVE_MONITOR_FG=#FF34322E
+COLOR_ACTIVE_MONITOR_BG=#FF58C5F1
+COLOR_INACTIVE_MONITOR_FG=#FF58C5F1
+COLOR_INACTIVE_MONITOR_BG=#FF34322E
+COLOR_FOCUSED_OCCUPIED_FG=#FFF6F9FF
+COLOR_FOCUSED_OCCUPIED_BG=#FF5C5955
+COLOR_FOCUSED_FREE_FG=#FFF6F9FF
+COLOR_FOCUSED_FREE_BG=#FF4d4d4d   #6D561C
+COLOR_FOCUSED_URGENT_FG=#FF34322E
+COLOR_FOCUSED_URGENT_BG=#FF1793d1   #F9A299
+COLOR_OCCUPIED_FG=#FFA3A6AB
+COLOR_OCCUPIED_BG=#FF4d4d4d #34322E
+COLOR_FREE_FG=#FF6F7277
+COLOR_FREE_BG=#FF4d4d4d #34322E
+COLOR_URGENT_FG=#FFF9A299
+COLOR_URGENT_BG=#FF34322E
+COLOR_LAYOUT_FG=#FFA3A6AB
+COLOR_LAYOUT_BG=#FF34322E
+COLOR_TITLE_FG=#FFA3A6AB
+COLOR_TITLE_BG=#FF34322E
+COLOR_STATUS_FG=#FFA3A6AB
+COLOR_STATUS_BG=#FF34322E
 
-archblue='#FF1793d1'
+archblue=#FF1793d1
+archpink=#FFE23D80
+arch=$archpink
 
 
 
@@ -70,11 +72,10 @@ decvol="%{A:amixer -M set Master 5- >/dev/null; readvolume:}-%{A}"
 
 # mini launcher
 center="%{A:dwb &> /dev/null &:}dwb%{A}"
-center+=" %{F$archblue}|%{F-} %{A:urxvt -title 'Weechat 1.0.1' -e weechat &> /dev/null &:}weechat%{A}"
-center+=" %{F$archblue}|%{F-} %{A:skype &> /dev/null &:}skype%{A}"
-center+=" %{F$archblue}|%{F-} %{A:deluge &> /dev/null &:}deluge%{A}"
-center+=" %{F$archblue}|%{F-} %{A:deluge &> /dev/null &:}deluge%{A}"
-center+=" %{F$archblue}|%{F-} %{A:wiz &> /dev/null &:}wiz%{A}"
+center+=" %{F$arch}|%{F-} %{A:urxvt -title 'Weechat 1.0.1' -e weechat &> /dev/null &:}weechat%{A}"
+center+=" %{F$arch}|%{F-} %{A:skype &> /dev/null &:}skype%{A}"
+center+=" %{F$arch}|%{F-} %{A:deluge &> /dev/null &:}deluge%{A}"
+center+=" %{F$arch}|%{F-} %{A:wiz &> /dev/null &:}wiz%{A}"
 
 
 readvolume () {
@@ -150,7 +151,7 @@ readvolume () {
 
     vol="$incvol $volume%% $decvol"
 
-    right="%{F$archblue}Å%{F-} $vol  %{F$archblue}³%{F-} $cpu  %{F$archblue}Î%{F-} $mem  %{F$archblue}µ%{F-} $bat  %{F$archblue}¶%{F-} $time "
+    right="%{F$arch}Å%{F-} $vol  %{F$arch}³%{F-} $cpu  %{F$arch}Î%{F-} $mem  %{F$arch}µ%{F-} $bat  %{F$arch}¶%{F-} $time "
 
 
 
@@ -184,9 +185,9 @@ readvolume () {
             left+="%{A:bspc desktop -f ${REPLY#?}:}" ;;&
 
           O*) # focused occupied desktop
-            left+="%{F$COLOR_FOCUSED_OCCUPIED_FG}%{B$COLOR_FOCUSED_OCCUPIED_BG}%{U$archblue}%{+u} ${REPLY#?} %{-u}%{B-}%{F-}" ;;&
+            left+="%{F$COLOR_FOCUSED_OCCUPIED_FG}%{B$COLOR_FOCUSED_OCCUPIED_BG}%{U$arch}%{+u} ${REPLY#?} %{-u}%{B-}%{F-}" ;;&
           F*) # focused free desktop
-            left+="%{F$COLOR_FOCUSED_FREE_FG}%{B$COLOR_FOCUSED_FREE_BG}%{U$archblue}%{+u} ${REPLY#?} %{-u}%{B-}%{F-}" ;;&
+            left+="%{F$COLOR_FOCUSED_FREE_FG}%{B$COLOR_FOCUSED_FREE_BG}%{U$arch}%{+u} ${REPLY#?} %{-u}%{B-}%{F-}" ;;&
           U*) # focused urgent desktop
             left+="%{F$COLOR_FOCUSED_URGENT_FG}%{B$COLOR_FOCUSED_URGENT_BG}%{U$COLOR_FOREGROUND}%{+u} ${REPLY#?} %{-u}%{B-}%{F-}" ;;&
           o*) # occupied desktop
