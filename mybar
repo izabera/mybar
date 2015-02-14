@@ -15,9 +15,6 @@ IFS=$' \t\n'
 timeformat=${TIMEFORMAT-"%H:%M  %a, %d %b %Y"}
 # note that setting it to an empty value will cause bash to use %T
 
-# > 60 to gather cpu/mem/battery info immediately
-SECONDS=61
-
 
 # colors from https://github.com/baskerville/bspwm/blob/master/examples/panel/panel_colors
 COLOR_FOREGROUND='#FFA3A6AB'
@@ -55,7 +52,7 @@ coproc bar -f -misc-tamsynmod-medium-r-normal--12-87-100-100-c-60-iso8859-1 -F "
 mkfifo /tmp/$$
 readonly _sleep=/tmp/$$
 sleep () {
-  read -t "$1" < "$_sleep"
+  read -t "$1" <> "$_sleep" 2> /dev/null
 }
 
 
@@ -82,6 +79,9 @@ readvolume () {
   read -r _bspcpid
   readonly xtitlepid=$_xtitlepid bspcpid=$_bspcpid
   trap 'kill "$bspcpid" "$xtitlepid"; rm "$_sleep"' EXIT
+
+  # to gather cpu/mem/battery info immediately
+  SECONDS=65
 
   while :; do 
 
