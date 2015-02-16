@@ -47,7 +47,8 @@ arch=$archpink
 
 
 
-# run bar in a coprocess, to avoid a fork with     ./script | bar | bash
+# run bar in a coprocess, to be able to set variables
+# it wouldn't be possible with     ./script | bar | bash
 coproc bar -f -misc-tamsynmod-medium-r-normal--12-87-100-100-c-60-iso8859-1 -F "$COLOR_FOREGROUND" -B "$COLOR_BACKGROUND"
 
 
@@ -60,29 +61,58 @@ sleep () {
 
 
 # this will need to be restarted when adding a monitor...
-unset monitor
 mapfile monitor < <(bspc query -M)
 num_mon=${#monitor[@]}
 
 
 # setting internal variables from a different process  \o/
-incvol="%{A:amixer -M set Master 5+ >/dev/null; readvolume:}+%{A}" 
-decvol="%{A:amixer -M set Master 5- >/dev/null; readvolume:}-%{A}" 
-
+incvol="%{A:amixer --quiet -M set Master 5%+; readvolume:}+%{A}" 
+decvol="%{A:amixer --quiet -M set Master 5%-; readvolume:}-%{A}" 
+togglevolpre="%{A:amixer --quiet -M set Master toggle; [[ \$status = off ]] && status=on || status=off:}"
+togglevolpost="%{A}"
+postvolume=%{F-}$togglevolpost
 
 # mini launcher
-center="%{A:dwb &> /dev/null &:}dwb%{A}"
-center+=" %{F$arch}|%{F-} %{A:urxvt -title 'Weechat 1.0.1' -e weechat &> /dev/null &:}weechat%{A}"
-center+=" %{F$arch}|%{F-} %{A:skype &> /dev/null &:}skype%{A}"
-center+=" %{F$arch}|%{F-} %{A:deluge &> /dev/null &:}deluge%{A}"
-center+=" %{F$arch}|%{F-} %{A:wiz &> /dev/null &:}wiz%{A}"
+launcher=(
+         # name     command
+           dwb      dwb
+           weechat  "urxvt -title 'Weechat 1.0.1' -e weechat &> /dev/null &"
+           skype    "skype &> /dev/null &"
+           deluge   "deluge &> /dev/null &"
+           wiz      wiz
+         )
+# note: can't use associative arrays because of order
+
+setlauncher () {
+  _center+="%{A:$2:}$1%{A}"
+  shift 2
+  while (($#)); do
+    _center+=" %{F$arch}|%{F-} %{A:$2:}$1%{A}"
+    shift 2
+  done
+}
+setlauncher "${launcher[@]}"
+readonly center=$_center
 
 
 readvolume () {
-  # the last line looks like this:
+  # the few last lines looks like this:
   # Mono: Playback 56 [64%] [-23.25dB] [on]
-  { read; read; read; read; read _ _ _ volume _; } < <(amixer -M get Master) 
-  volume=${volume#?} volume=${volume%??}
+
+  # if that mono line is empty, there will be these two
+  # Front Left: Capture 8251 [13%] [on]
+  # Front Right: Capture 8251 [13%] [on]
+  { read; read; read; read
+    read _ _ _ volume _ status _
+    volume=${volume//[!0-9]}
+    if [[ -z $volume ]] && read -t 0; then
+      read _ _ _ _ volumeleft status _
+      read _ _ _ _ volumeright status _
+      volumeleft=${volumeleft//[!0-9]} volumeright=${volumeright//[!0-9]}
+      volume=$(( (volumeleft + volumeright) / 2))
+    fi
+    status=${status//[!ofn]}
+  } < <(amixer -M get Master) 
 }
 
 { 
@@ -149,7 +179,12 @@ readvolume () {
 
 
 
-    vol="$incvol $volume%% $decvol"
+    if [[ $status = off ]]; then
+      prevolume=%{F$COLOR_FREE_FG}$togglevolpre
+    else
+      prevolume=$togglevolpre
+    fi
+    vol="$incvol $prevolume$volume%%$postvolume $decvol"
 
     right="%{F$arch}Å%{F-} $vol  %{F$arch}³%{F-} $cpu  %{F$arch}Î%{F-} $mem  %{F$arch}µ%{F-} $bat  %{F$arch}¶%{F-} $time "
 
