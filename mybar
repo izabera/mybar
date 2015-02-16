@@ -4,10 +4,14 @@
 
 declare -i memtotal memfree memavailable buffers cached
 
+# important variables are readonly and it won't be possible to set them with other commands
+
 # nullglob needed for the battery
 shopt -s nullglob
+
 # normalize IFS to avoid unexpected results when read'ing
-IFS=$' \t\n'
+unset IFS
+readonly IFS=$' \t\n'
 
 # set the env variable TIMEFORMAT to change this
 # there can be no mismatched ( ) in that format
@@ -16,6 +20,7 @@ timeformat=${TIMEFORMAT-"%H:%M  %a, %d %b %Y"}
 # note that setting it to an empty value will cause bash to use %T
 
 
+# TODO: rc file?  does it make any sense?
 COLOR_FOREGROUND=#FFA3A6AB
 COLOR_BACKGROUND=#FF4d4d4d
 COLOR_ACTIVE_MONITOR_FG=#FF34322E
@@ -75,7 +80,7 @@ postvolume=%{F-}$togglevolpost
 # mini launcher
 launcher=(
          # name     command
-           dwb      dwb
+           dwb      "dwb &"
            weechat  "urxvt -title 'Weechat 1.0.1' -e weechat &> /dev/null &"
            skype    "skype &> /dev/null &"
            deluge   "deluge &> /dev/null &"
@@ -117,6 +122,7 @@ readvolume () {
 
 { 
   # cleaning up junk is hard
+  # FIXME: when killing X, one of the processes that doesn't die
   read -u 3 -r _xtitlepid
   read -r _bspcpid
   readonly xtitlepid=$_xtitlepid bspcpid=$_bspcpid
