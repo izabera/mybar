@@ -10,8 +10,7 @@ declare -i memtotal memfree memavailable buffers cached
 shopt -s nullglob
 
 # normalize IFS to avoid unexpected results when read'ing
-unset IFS
-readonly IFS=$' \t\n'
+IFS=$' \t\n'
 
 # set the env variable TIMEFORMAT to change this
 # there can be no mismatched ( ) in that format
@@ -122,7 +121,6 @@ readvolume () {
 
 { 
   # cleaning up junk is hard
-  # FIXME: when killing X, one of the processes that doesn't die
   read -u 3 -r _xtitlepid
   read -r _bspcpid
   readonly xtitlepid=$_xtitlepid bspcpid=$_bspcpid
