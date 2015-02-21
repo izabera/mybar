@@ -53,10 +53,7 @@ arch=$archpink
 
 # run bar in a coprocess, to be able to set variables
 # it wouldn't be possible with     ./script | bar | bash
-coproc {
-  echo $BASHPID
-  exec bar -f -misc-tamsynmod-medium-r-normal--12-87-100-100-c-60-iso8859-1 -F "$COLOR_FOREGROUND" -B "$COLOR_BACKGROUND"
-}
+coproc bar -f -misc-tamsynmod-medium-r-normal--12-87-100-100-c-60-iso8859-1 -F "$COLOR_FOREGROUND" -B "$COLOR_BACKGROUND"
 
 
 # an empty fd to read from
@@ -126,9 +123,8 @@ readvolume () {
   # cleaning up junk is hard
   read -u 3 -r _xtitlepid
   read -r _bspcpid
-  read -r -u "${COPROC[0]}" _barpid
-  readonly xtitlepid=$_xtitlepid bspcpid=$_bspcpid barpid=$_barpid
-  unset _xtitlepid _bspcpid _barpid
+  readonly xtitlepid=$_xtitlepid bspcpid=$_bspcpid barpid=$COPROC_PID
+  unset _xtitlepid _bspcpid
   # harakiri
   trap 'rm -f "$_sleep"; kill -TERM "-$$" "$bspcpid" "$xtitlepid" "$barpid"' EXIT
 
